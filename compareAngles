@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Which Angle is Bigger?</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #canvasContainer {
+            position: relative;
+            width: 500px;
+            height: 500px;
+            border: 3px dashed SteelBlue;
+            margin-bottom: 20px;
+            border-radius: 5%;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+.controls {
+    display: flex;
+    flex-direction: row; /* Change direction to row */
+    align-items: center; /* Align items vertically in the center */
+    gap: 10px; /* Add space between buttons */
+}
+
+
+        button, input[type="range"] {
+            margin: 10px;
+    font-size: 18px;
+        }
+        
+        #result {
+            font-size: 24px;
+            margin-top: 10px;
+            text-align: center;
+            visibility: hidden; /* Hidden initially */
+        }
+        
+        
+        #againBtn {
+    font-size: 18px;
+    padding: 10px 20px;
+    border: 1px solid #007bff;
+    margin-left: 30px;
+    border-radius: 5px;
+    background-color: SteelBlue;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+}
+        
+     #againBtn:hover {
+    background-color: #4662A3;
+}
+        
+        /* Styles for the overlay */
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+#overlayContent {
+    text-align: left;
+    padding: 20px;
+    font-size: 18px;
+    line-height: 1.6;
+    color: #333;
+}
+#overlayContent h2 {
+    margin-bottom: 20px;
+    font-size: 24px;
+    color: #222;
+}
+
+#howToCompareBtn {
+    font-size: 18px;
+    padding: 10px 20px;
+    border: 1px solid Salmon;
+    margin-left: 30px;
+    border-radius: 5px;
+    background-color: LightCoral;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+#howToCompareBtn:hover {
+    background-color: Salmon;
+}
+
+
+
+    </style>
+</head>
+<body>
+    <h2 style="text-align: center;">Which Angle is Bigger?<br/><span style="color: SteelBlue;">Blue</span> or <span style="color: LightCoral;">Red</span>?</h2>
+    <div id="canvasContainer">
+        <canvas id="angleCanvas" width="500" height="500"></canvas>
+            <div id="result"></div>
+    </div>
+            <p>Move the <span style="color: SteelBlue;">slider ⇩</span> to compare visually. Click <span style="color: SteelBlue;">[Again] ⇩</span> to create new angles.</p>
+    <div class="controls">
+        <input id="slider" type="range" min="0" max="1" step="0.01" value="0">
+        <button id="againBtn">Again</button> <button id="howToCompareBtn">How to Compare?</button>
+    </div>
+
+    
+    
+    <!-- Overlay for instructions -->
+<div id="overlay">
+    <div id="overlayContent">
+        <h2 style="color: SteelBlue; text-align: center;">*Let's compare Angles A and B.*</h2>
+        <p>
+            <span style="color: LightCoral;">Step 1.</span> Move the <em>Vertex</em> of Angle A to <em>Vertex</em> of Angle B.<br><br>
+            <span style="color: LightCoral;">Step 2.</span> Rotate Angle A about the vertex so that one <em>Arm</em> of A coincides with one <em>Arm</em> of B, <br/> with the other arm in the same direction.<br><br>
+            <span style="color: LightCoral;">Step 3.</span> <em>Visually</em> we can now see which angle is bigger or smaller. <br/>The bigger angle measure will be the longer arc with the second arm further away.
+        </p>
+    </div>
+</div>
+    
+    
+    
+    
+    
+    
+    
+    <script>
+        const canvas = document.getElementById('angleCanvas');
+        const ctx = canvas.getContext('2d');
+        const slider = document.getElementById('slider');
+        const againBtn = document.getElementById('againBtn');
+        let angleA, angleB, orientationA, orientationB, startX, startY;
+
+        function randomAngle() {
+            return Math.floor(Math.random() * 120) + 30; // Random angle between 30° and 150°
+        }
+
+        function randomOrientation() {
+            return Math.random() * 360; // Random orientation in degrees
+        }
+
+        function randomFarPosition(centerX, centerY, minDistance, radius) {
+            let x, y;
+            do {
+                x = Math.random() * (canvas.width - 2 * radius) + radius;
+                y = Math.random() * (canvas.height - 2 * radius) + radius;
+            } while (Math.hypot(x - centerX, y - centerY) < minDistance);
+            return { x, y };
+        }
+
+        function drawAngle(x, y, angle, orientation, color) {
+            const radius = 100;
+            const startAngle = (orientation * Math.PI) / 180;
+            const endAngle = startAngle + (angle * Math.PI) / 180;
+
+            const startX = x + radius * Math.cos(startAngle);
+            const startY = y + radius * Math.sin(startAngle);
+            const endX = x + radius * Math.cos(endAngle);
+            const endY = y + radius * Math.sin(endAngle);
+
+            // Draw arms
+            ctx.globalAlpha = 0.75; // 75% transparency
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(startX, startY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+
+            // Draw arc
+            ctx.beginPath();
+            ctx.arc(x, y, radius / 2, startAngle, endAngle);
+            ctx.stroke();
+        }
+
+        function drawScene(t) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Fixed position for Angle B
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            drawAngle(centerX, centerY, angleB, orientationB, 'LightCoral');
+
+            // Interpolating the position of Angle A
+            const xA = startX + t * (centerX - startX);
+            const yA = startY + t * (centerY - startY);
+            const interpolatedOrientation = orientationA + t * (orientationB - orientationA);
+
+            drawAngle(xA, yA, angleA, interpolatedOrientation, 'SteelBlue');
+        }
+
+        function resetAngles() {
+            angleA = randomAngle();
+            angleB = randomAngle();
+            orientationA = randomOrientation();
+            orientationB = randomOrientation();
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const minDistance = 200; // Minimum distance between vertices
+            const radius = 100; // Radius of the angles
+
+            // Ensure Angle A starts far away and fully inside the canvas
+            const position = randomFarPosition(centerX, centerY, minDistance, radius);
+            startX = position.x;
+            startY = position.y;
+
+            slider.value = 0;
+            drawScene(0);
+        }
+
+        slider.addEventListener('input', (e) => {
+            const t = parseFloat(e.target.value);
+            drawScene(t);
+        });
+
+        againBtn.addEventListener('click', resetAngles);
+
+        // Initialize
+        resetAngles();
+        
+        
+        const howToCompareBtn = document.getElementById('howToCompareBtn');
+const overlay = document.getElementById('overlay');
+
+// Show overlay when "How to Compare?" button is clicked
+howToCompareBtn.addEventListener('click', () => {
+    overlay.style.visibility = 'visible';
+});
+
+// Hide overlay when it is clicked
+overlay.addEventListener('click', () => {
+    overlay.style.visibility = 'hidden';
+});
+        
+        
+        
+    </script>
+</body>
+</html>
