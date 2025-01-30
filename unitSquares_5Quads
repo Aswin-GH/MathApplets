@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grid and Polygons</title>
+
+    <style>
+        /* Center everything on the screen */
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+            flex-direction: column;
+        }
+
+        /* Container for the grid and polygons */
+        .grid-container {
+            position: relative;
+            width: 500px;
+            height: 400px;
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            border: 2px solid Salmon;
+            border-radius: 2.5%;
+        }
+
+        /* Grid cells */
+        .grid-cell {
+            position: relative;
+            border: 1px dashed LightCoral;
+            opacity: 50%;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        
+        /* Grid cell highlight */
+        .highlighted {
+            background-color: LightSteelBlue; /* Add visual highlighting */
+            opacity: 50%; /* Make the highlight more visible */
+        }
+
+        /* Counter for highlighted cells */
+        .counter {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+            font-weight: bold;
+            color: black;
+            pointer-events: none;
+        }
+
+        /* Styling for polygons */
+        .polygon {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+            pointer-events: none;
+            transition: transform 0.5s ease-in-out; /* Smooth animation */
+        }
+
+        /* Button styling */
+        .button {
+            display: inline-block;
+            border-radius: 4px;
+            background-color: Salmon;
+            border: none;
+            color: #FFFFFF;
+            text-align: center;
+            font-size: 28px;
+            padding: 20px;
+            transition: all 0.5s;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        .button:hover {
+            background-color: Tomato;
+        }
+
+        .button span {
+            cursor: pointer;
+            display: inline-block;
+            position: relative;
+            transition: 0.5s;
+        }
+
+        .button span:after {
+            content: " ↯";
+            font-size: 30px;
+            position: absolute;
+            opacity: 0;
+            right: -20px;
+            transition: 0.5s;
+        }
+
+        .button:hover span {
+            padding-right: 25px;
+        }
+
+        .button:hover span:after {
+            opacity: 1;
+            right: 0;
+        }
+        
+        .button:disabled {
+            background-color: gray;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        
+        /* Prevent hover effects when disabled */
+        .button:disabled:hover span {
+            padding-right: 0; /* Reset any padding added by hover */
+        }
+
+        .button:disabled:hover span:after {
+            opacity: 0; /* Hide the hover animation */
+            right: -20px; /* Reset the position of the span:after content */
+        }
+        
+        .skPoly {
+        width: 100%;
+        height: 100vh;
+        background-image: repeating-linear-gradient(
+            45deg,
+            black,
+            black 10px,
+            white 10px,
+            white 20px
+        );
+    }
+    </style>
+</head>
+<body>
+<h2 style="font-family: Arial; color:IndianRed;">Find Area in Unit Squares</h2>
+<p style="font-family: Arial; color:SteelBlue;"><em>Click the Square to count...</em></p>
+    <div class="grid-container" id="gridContainer">
+        <div class="polygon-container" id="polygonContainer"></div>
+    </div>
+    <div>
+        <button class="button" id="rearrangeButton"><span>Rearrange</span></button>
+        <button class="button" id="nextButton">Next</button>
+    </div>
+
+    <script>
+        const gridContainer = document.getElementById("gridContainer");
+        const polygonContainer = document.getElementById("polygonContainer");
+
+        const gridSize = { cols: 10, rows: 8 }; // Grid size: 10x8
+        const cellWidth = 50; // Width of each cell in pixels
+        const cellHeight = 50; // Height of each cell in pixels
+
+        let currentSetIndex = 0; // Tracks the current polygon set
+        let highlightCounter = 0; // Tracks highlighted cells
+
+        // Polygons data sets
+        const polygonSets = [
+            [
+                
+                { id: "skPoly", points: [[3, 3], [4, 7], [4, 6], [8, 6], [8, 3]], color: "LightCoral" },
+                { id: "skPoly", points: [[4, 7], [4, 6], [8, 6]], color: "Gainsboro" },
+                {
+                    id: "trPoly1",
+                    points: [[4, 7], [4, 6], [8, 6]],
+                    color: "LightCoral",
+                    anchor: [4, 7],
+                    rotation: 0,
+                    offsetX: 0,
+                    offsetY: 0,
+                    rotationStep: 270,  // Rotate by 90 degrees per click
+                    offsetStepX: 0,   // Move right by 20px per click
+                    offsetStepY: 0,   // Move down by 10px per click
+                    flipX: 1, // 1 for normal, -1 for flipped horizontally
+            		flipY: 1, // 1 for normal, -1 for flipped vertically
+                    ColorChange: "Tomato"
+                },
+            ],
+            [
+                
+                { id: "skPoly", points: [[2, 2], [4, 6], [5, 6], [5, 2]], color: "LightCoral" },
+                { id: "retain", points: [[5, 2], [5, 6], [7, 2]], color: "Gainsboro" },
+                {
+                    id: "trPoly1",
+                    points: [[5, 2], [5, 6], [7, 2]],
+                    color: "LightCoral",
+                    anchor: [5, 2],
+                    rotation: 0,
+                    offsetX: 0,
+                    offsetY: 0,
+                    rotationStep: 180,  // Rotate by 90 degrees per click
+                    offsetStepX: -3,   // Move right by 20px per click
+                    offsetStepY: 4,   // Move down by 10px per click
+                    flipX: -1, // 1 for normal, -1 for flipped horizontally
+            		flipY: 1, // 1 for normal, -1 for flipped vertically
+                    ColorChange: "Tomato"
+                },
+            ],
+            [
+                
+                { id: "skPoly", points: [[3, 1], [5, 6], [6, 6], [6, 1]], color: "LightCoral" },
+                { id: "retain", points: [[6, 1], [6, 6], [8, 6]], color: "Gainsboro" },
+                {
+                    id: "trPoly1",
+                    points: [[6, 1], [6, 6], [8, 6]],
+                    color: "LightCoral",
+                    anchor: [5, 2],
+                    rotation: 0,
+                    offsetX: 0,
+                    offsetY: 0,
+                    rotationStep: 0,  // Rotate by 90 degrees per click
+                    offsetStepX: -3,   // Move right by 20px per click
+                    offsetStepY: 0,   // Move down by 10px per click
+                    flipX: 1, // 1 for normal, -1 for flipped horizontally
+            		flipY: 1, // 1 for normal, -1 for flipped vertically
+                    ColorChange: "Tomato"
+                },
+            ],
+            [
+                
+                { id: "skPoly", points: [[4, 4], [6, 7], [6, 1]], color: "LightCoral" },			  { id: "Retain", points: [[6, 4], [6, 1], [8, 4]], color: "Gainsboro" },				{ id: "Retain", points: [[6, 4], [6, 7], [8, 4]], color: "Gainsboro" },
+                {
+                    id: "trPoly1",
+                    points: [[6, 4], [6, 1], [8, 4]],
+                    color: "LightCoral",
+                    anchor: [5, 2],
+                    rotation: 0,
+                    offsetX: 0,
+                    offsetY: 0,
+                    rotationStep: 0,  // Rotate by 90 degrees per click
+                    offsetStepX: -2,   // Move right by 20px per click
+                    offsetStepY: 3,   // Move down by 10px per click
+                    flipX: 1, // 1 for normal, -1 for flipped horizontally
+            		flipY: 1, // 1 for normal, -1 for flipped vertically
+                    ColorChange: "Tomato"
+                },
+                {
+                    id: "trPoly2",
+                    points: [[6, 4], [6, 7], [8, 4]],
+                    color: "LightCoral",
+                    anchor: [5, 2],
+                    rotation: 0,
+                    offsetX: 0,
+                    offsetY: 0,
+                    rotationStep: 0,  // Rotate by 90 degrees per click
+                    offsetStepX: -2,   // Move right by 20px per click
+                    offsetStepY: -3,   // Move down by 10px per click
+                    flipX: 1, // 1 for normal, -1 for flipped horizontally
+            		flipY: 1, // 1 for normal, -1 for flipped vertically
+                    ColorChange: "Tomato"
+                },
+            ],
+            [
+                
+                { id: "skPoly", points: [[4, 4], [7, 5], [7, 2], [6,2]], color: "LightCoral" },			  { id: "Retain", points: [[6, 2], [7, 2], [7, 1]], color: "Gainsboro" },				{ id: "Retain", points: [[7, 1], [7, 4], [8, 4]], color: "Gainsboro" },				{ id: "Retain", points: [[7, 4], [7, 5], [8, 4]], color: "Gainsboro" },
+                {
+                    id: "trPoly1",
+                    points: [[6, 2], [7, 2], [7, 1]],
+                    color: "LightCoral",
+                    anchor: [6, 2],
+                    rotation: 0,
+                    offsetX: 0,
+                    offsetY: 0,
+                    rotationStep: 180,  // Rotate by 90 degrees per click
+                    offsetStepX: 0,   // Move right by 20px per click
+                    offsetStepY: 0,   // Move down by 10px per click
+                    flipX: 1, // 1 for normal, -1 for flipped horizontally
+            		flipY: 1, // 1 for normal, -1 for flipped vertically
+                    ColorChange: "Tomato"
+                },
+                {
+                    id: "trPoly2",
+                    points: [[7, 1], [7, 4], [8, 4]],
+                    color: "LightCoral",
+                    anchor: [7, 4],
+                    rotation: 0,
+                    offsetX: 0,
+                    offsetY: 0,
+                    rotationStep: -90,  // Rotate by 90 degrees per click
+                    offsetStepX: -3,   // Move right by 20px per click
+                    offsetStepY: 1,   // Move down by 10px per click
+                    flipX: 1, // 1 for normal, -1 for flipped horizontally
+            		flipY: -1, // 1 for normal, -1 for flipped vertically
+                    ColorChange: "Tomato"
+                },
+                {
+                    id: "trPoly3",
+                    points: [[7, 4], [7, 5], [8, 4]],
+                    color: "LightCoral",
+                    anchor: [5, 2],
+                    rotation: 0,
+                    offsetX: 0,
+                    offsetY: 0,
+                    rotationStep: 0,  // Rotate by 90 degrees per click
+                    offsetStepX: -3,   // Move right by 20px per click
+                    offsetStepY: -1,   // Move down by 10px per click
+                    flipX: 1, // 1 for normal, -1 for flipped horizontally
+            		flipY: 1, // 1 for normal, -1 for flipped vertically
+                    ColorChange: "Tomato"
+                },
+            ],
+            
+            // Add similar details for the second set
+        ];
+
+        // Initialize grid
+        function initializeGrid() {
+            for (let row = 0; row < gridSize.rows; row++) {
+                for (let col = 0; col < gridSize.cols; col++) {
+                    const cell = document.createElement("div");
+                    cell.classList.add("grid-cell");
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+
+                    // Add click event listener for highlighting
+                    cell.addEventListener("click", () => toggleHighlight(cell));
+
+                    gridContainer.appendChild(cell);
+                }
+            }
+        }
+
+        // Toggle highlight for grid cells with counter
+        function toggleHighlight(cell) {
+            const isHighlighted = cell.classList.contains("highlighted");
+
+            if (isHighlighted) {
+                // De-highlight the cell
+                cell.classList.remove("highlighted");
+
+                // Remove the counter element
+                const counterElement = cell.querySelector(".counter");
+                if (counterElement) {
+                    counterElement.remove();
+                }
+
+                // Reorder the remaining counters
+                reorderCounters();
+            } else {
+                // Highlight the cell
+                cell.classList.add("highlighted");
+
+                // Increment the counter
+                highlightCounter++;
+
+                // Add a counter to the cell
+                const counterElement = document.createElement("div");
+                counterElement.classList.add("counter");
+                counterElement.textContent = highlightCounter;
+                cell.appendChild(counterElement);
+            }
+        }
+
+        // Reorder counters dynamically after de-highlighting
+        function reorderCounters() {
+            highlightCounter = 0; // Reset counter
+            const highlightedCells = document.querySelectorAll(".grid-cell.highlighted");
+
+            highlightedCells.forEach((cell) => {
+                highlightCounter++;
+                const counterElement = cell.querySelector(".counter");
+                if (counterElement) {
+                    counterElement.textContent = highlightCounter;
+                }
+            });
+        }
+
+        // Create polygons dynamically
+        function createPolygons(polygonSet) {
+            polygonContainer.innerHTML = ""; // Clear existing polygons
+
+            polygonSet.forEach((polygon) => {
+                const div = document.createElement("div");
+                div.classList.add("polygon");
+                div.setAttribute("id", polygon.id);
+
+                // Convert points to clip-path format
+                const clipPathPoints = polygon.points
+                    .map(([x, y]) => `${x * cellWidth}px ${y * cellHeight}px`)
+                    .join(", ");
+                div.style.clipPath = `polygon(${clipPathPoints})`;
+
+                // Set polygon background color
+                div.style.backgroundColor = polygon.color;
+
+                // Set position and size relative to the grid container
+                div.style.position = "absolute";
+                div.style.top = 0;
+                div.style.left = 0;
+
+                // Apply saved transformations (rotation and translation)
+                if (polygon.rotation || polygon.offsetX || polygon.offsetY) {
+                    div.style.transformOrigin = `${polygon.anchor[0] * cellWidth}px ${
+                        polygon.anchor[1] * cellHeight
+                    }px`;
+                    div.style.transform = `translate(${polygon.offsetX}px, ${polygon.offsetY}px) rotate(${polygon.rotation}deg)`;
+                }
+
+                polygonContainer.appendChild(div);
+            });
+        }
+
+        // Rearrange polygons on button click
+        document.getElementById("rearrangeButton").addEventListener("click", () => {
+                // Disable the Rearrange button
+    rearrangeButton.disabled = true;
+
+    // Rearrange polygons logic
+            
+            
+            const currentSet = polygonSets[currentSetIndex];
+            currentSet.forEach((polygon) => {
+                if (polygon.id.startsWith("trPoly")) {
+                    const trPoly = document.getElementById(polygon.id);
+                    if (trPoly) {
+                        // Update rotation and offsets
+                        polygon.rotation = (polygon.rotation + polygon.rotationStep) % 360;
+                        polygon.offsetX += polygon.offsetStepX*cellWidth;
+                        polygon.offsetY += polygon.offsetStepY*cellHeight;
+
+                        // Apply transformations (including flips)
+                        trPoly.style.transformOrigin = `${polygon.anchor[0] * cellWidth}px ${
+                            polygon.anchor[1] * cellHeight
+                        }px`;
+                        trPoly.style.transform = `translate(${polygon.offsetX}px, ${polygon.offsetY}px) rotate(${polygon.rotation}deg) scale(${polygon.flipX}, ${polygon.flipY})`;
+                        trPoly.style.backgroundColor = polygon.ColorChange;
+                    }
+                }
+            });
+        });
+
+        // Load next polygon set on button click
+document.getElementById("nextButton").addEventListener("click", () => {
+        // Enable the Rearrange button
+    rearrangeButton.disabled = false;
+
+
+    // Clear all highlighted cells
+    const highlightedCells = document.querySelectorAll(".grid-cell.highlighted");
+    highlightedCells.forEach((cell) => {
+        cell.classList.remove("highlighted"); // Remove the highlight class
+
+        const counterElement = cell.querySelector(".counter");
+        if (counterElement) {
+            counterElement.remove(); // Remove the counter
+        }
+    });
+
+    highlightCounter = 0; // Reset the highlight counter
+
+
+    // Load the next set of polygons
+    currentSetIndex = (currentSetIndex + 1) % polygonSets.length; // Move to the next set
+    const currentSet = polygonSets[currentSetIndex];
+
+    // Reset rotation and offsets for the new set
+    currentSet.forEach((polygon) => {
+        if (polygon.id.startsWith("trPoly")) {
+            polygon.rotation = 0;
+            polygon.offsetX = 0;
+            polygon.offsetY = 0;
+        }
+    });
+
+    createPolygons(currentSet); // Recreate polygons for the new set
+});
+
+        // Initialize grid and first polygon set
+        initializeGrid();
+        createPolygons(polygonSets[currentSetIndex]);
+    </script>
+</body>
+</html>
