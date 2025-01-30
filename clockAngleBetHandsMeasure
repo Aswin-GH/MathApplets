@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clock Angle Applet</title>
+  <style>
+    /* General Body Styles */
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background-color: #eef4fa;
+    }
+
+    /* Container Styles */
+    .container {
+      display: flex;
+      gap: 30px;
+      padding: 20px;
+      border: 2px dashed SteelBlue;
+      background-color: #ffffff;
+      border-radius: 15px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      width: 90%;
+      max-width: 1000px;
+      flex-direction: column;
+    }
+
+    /* Subsection Styling */
+    .working-area, .feedback-area {
+      padding: 15px;
+      border-radius: 10px;
+      border-color: SteelBlue;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .working-area {
+      border: 2px solid SteelBlue;
+      flex: 2;
+      background-color: #f0f8ff;
+    }
+
+    .feedback-area {
+      border: 2px solid Teal;
+      flex: 1;
+      background-color: #eaf8e8;
+    }
+
+    /* Clock Styling */
+    .clock {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      border: 4px solid SteelBlue;
+      border-radius: 50%;
+      background-color: #fff;
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
+      align-items: center
+    }
+
+    .clock .number {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      color: SteelBlue;
+      text-align: center;
+      line-height: 20px;
+      font-size: 16px;
+      font-weight: bold;
+      transform: translate(-50%, -50%);
+    }
+
+    /* Clock Hands */
+    .hand {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform-origin: left center;
+      transform: rotate(0deg);
+      transition: transform 0.3s ease-in-out;
+    }
+
+    .hour-hand {
+      width: 47px; /* 3/7 of 220px */
+      height: 5px;
+      background-color: SteelBlue;
+      transform: rotate(-90deg);
+    }
+
+    .minute-hand {
+      width: 78px; /* 5/7 of 220px */
+      height: 3px;
+      background-color: Tomato;
+      transform: rotate(-90deg);
+    }
+
+    /* Inline Layout for Buttons and Inputs */
+    .inline-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Button and Input Styles */
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      color: #ffffff;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease-in-out;
+    }
+
+    #set-time, #show-angle {
+      background-color: SteelBlue;
+    }
+
+    #how-to-calculate, #show-protractor, #how-to-measure-btn {
+      background-color: Teal;
+    }
+
+    input[type="text"] {
+      padding: 10px;
+      font-size: 16px;
+      text-align: center;
+      border: 1px solid SteelBlue;
+      border-radius: 5px;
+      width: 180px;
+      background-color: #f8f9fa;
+    }
+
+    @keyframes fade-out {
+      0% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+      }
+    }
+
+    .sector-path {
+      transition: opacity 0.5s ease-in-out; /* Smooth fade-out */
+    }
+    
+    /* Overlay Styles */
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: none; /* Initially hidden */
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .overlay-content {
+      background-color: #ffffff;
+      border-radius: 10px;
+      padding: 20px;
+      width: 80%;
+      max-width: 600px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      font-family: 'Arial', sans-serif;
+    }
+
+    .overlay-content h2 {
+      font-size: 24px;
+      margin-bottom: 10px;
+      color: SteelBlue;
+    }
+
+    .overlay-content p {
+      font-size: 16px;
+      margin: 10px 0;
+      line-height: 1.5;
+    }
+
+    .overlay-content .steps {
+      font-weight: bold;
+      color: Teal;
+      margin-top: 15px;
+    }
+
+    .overlay-content button {
+      margin-top: 20px;
+      padding: 10px 15px;
+      font-size: 16px;
+      color: #ffffff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .close-btn {
+      background-color: LightCoral;
+    }
+
+    .toggle-text-btn {
+      background-color: Teal;
+    }
+    
+
+    /* Protractor Styles */
+    .protractor-container {
+      position: absolute;
+      top: 0%; /* Center vertically */
+      left: 0%; /* Center horizontally */
+      width: 220px; /* Match clock size */
+      height: 220px; /* Match clock size */
+      transform-origin: center; /* Rotate around the center */
+      transform: rotate(0deg); /* Default rotation */
+      display: none; /* Initially hidden */
+      z-index: 10; /* Ensure it's above other elements */
+    }
+
+    .rotation-handle {
+      position: absolute;
+      top: -10px; /* Position the handle above the protractor */
+      left: 50%; /* Center horizontally */
+      width: 20px;
+      height: 20px;
+      background-color: SteelBlue;
+      border-radius: 50%;
+      cursor: grab;
+      transform: translate(-50%, -50%);
+      z-index: 11; /* Ensure the handle is clickable */
+    }
+
+    .protractor-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      transform-origin: center;
+      transform: rotate(0deg);
+      filter: brightness(0.5);
+    }
+
+
+    
+    
+    
+  </style>
+</head>
+<body>
+
+
+<!-- Translucent Overlay -->
+<div class="overlay" id="calculation-overlay">
+  <div class="overlay-content">
+    <h2>How do we calculate the angle?</h2>
+    <div id="overlay-text">
+      <p><span class="steps">Step 1</span> - Look at the time.<br/><span class="steps">Step 2</span> - For every hour, the hour hand would make 30°.<br/><span class="steps">Step 3</span> - For every minute, the Minute Hand would make 6°.<br/>
+        - Remember, the Hour Hand should also move 
+        <sup>1</sup>&frasl;<sub>2</sub>° for every minute! Or, you can think of it as 
+        <sup>1</sup>&frasl;<sub>2</sub>° for every 2 minutes. Add this to the angle for the Hour Hand.<br/>
+        <span class="steps">Step 4</span> - You have an angle now for the Minute Hand and for the Hour Hand. Simply subtract the smaller
+        angle from the larger angle, and you have the angle in between!<br/><span class="steps">That's it!</span></p>
+    </div>
+    <button class="toggle-text-btn" id="toggle-why-btn">Why does this work?</button>
+    <button class="close-btn" id="close-overlay-btn">Close</button>
+  </div>
+</div>
+
+<!-- Overlay for "How to Measure" -->
+<div class="overlay" id="measure-overlay">
+  <div class="overlay-content">
+    <h2>How to measure using a protractor?</h2>
+    <p><span class="steps">Step 1</span> - Place the protractor with its vertex at the center of the Clock.</p>
+    <p><span class="steps">Step 2</span> - Rotate the protractor such that its 0° lines up with one of the hands.</p>
+    <p><span class="steps">Step 3</span> - Read the angle formed by the other hand with the scale markings on the protractor.</p>
+    <p><span class="steps">As easy as that!</span></p>
+    <p><i>Note that you need to make sure both hands are within the range of the protractor!</i></p>
+    <button class="close-btn" id="close-measure-overlay-btn">Close</button>
+  </div>
+</div>
+
+
+
+  <div class="container">
+  <h2 style="text-align: center;">Find the angle made by the hands of the clock!</h2>
+<p style="text-align: center;">Use the <span style = "color: SteelBlue;">Set Time</span> to move the hands and <span style = "color: SteelBlue;">Show Angle</span> to reveal the angle</p>
+    <!-- Working Area -->
+    <div class="working-area">
+      <div class="inline-group">
+        <button id="set-time">Set Time</button>
+        <input type="text" id="time-box" placeholder="Time will appear here" readonly>
+      </div>
+      <div class="clock">
+      
+                <!-- Protractor Container -->
+<div class="protractor-container" id="protractor-container">
+  <img
+    src="https://i.imgur.com/JiAVRLw.png"
+    alt="Protractor"
+    class="protractor-image"
+    id="protractor-image"
+  />
+  <div class="rotation-handle" id="rotation-handle"></div>
+</div>
+      
+        <!-- SVG for angle highlight -->
+        <svg class="sector-svg" width="220" height="220" viewBox="0 0 220 220" style="position: absolute; top: 0; left: 0;">
+          <path class="sector-path" fill="rgba(0, 123, 255, 0.2)" d="" />
+        </svg>
+
+        <!-- Clock Numbers -->
+        <div class="number" style="top: 28px; left: 158px;">1</div>
+        <div class="number" style="top: 63px; left: 192px;">2</div>
+        <div class="number" style="top: 110px; left: 205px;">3</div>
+        <div class="number" style="top: 158px; left: 192px;">4</div>
+        <div class="number" style="top: 192px; left: 158px;">5</div>
+        <div class="number" style="top: 205px; left: 110px;">6</div>
+        <div class="number" style="top: 192px; left: 63px;">7</div>
+        <div class="number" style="top: 158px; left: 28px;">8</div>
+        <div class="number" style="top: 110px; left: 15px;">9</div>
+        <div class="number" style="top: 62px; left: 28px;">10</div>
+        <div class="number" style="top: 28px; left: 62px;">11</div>
+        <div class="number" style="top: 15px; left: 110px;">12</div>
+        
+        <!-- Clock Hands -->
+        <div class="hand hour-hand"></div>
+        <div class="hand minute-hand"></div>
+      </div>
+      <div class="inline-group">
+        <button id="show-angle">Show Angle</button>
+        <input type="text" id="angle-box" placeholder="Angle will appear here" readonly class="hidden">
+      </div>
+      
+    </div>
+
+    <!-- Feedback Area -->
+    <div class="feedback-area">
+      <div class="inline-group">
+        <button id="how-to-calculate">How to Calculate</button>
+        <button id="show-protractor">Show Protractor</button>
+        <!-- How to Measure Button -->
+        <button id="how-to-measure-btn" style="display: none;">How to Measure</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let selectedAngle = 0; // Global variable to store the selected angle
+    let isAngleDisplayed = false;
+    const angleBox = document.getElementById("angle-box");
+    let hourAngle = 0; // Global variable for hour hand angle
+let minuteAngle = 0; // Global variable for minute hand angle
+
+    // Helper function to set the time
+    function setTime() {
+      angleBox.value = "";
+      isAngleDisplayed = false;
+      const showAngleButton = document.getElementById("show-angle");
+      showAngleButton.textContent = "Show Angle"; // Reset button text
+      const sectorPath = document.querySelector(".sector-path");
+
+      // Trigger fade-out animation
+      sectorPath.style.opacity = "0";
+
+      // Wait for the fade-out animation to complete (500ms) before updating
+      setTimeout(() => {
+        const hours = Math.floor(Math.random() * 12);
+        const minutesOptions = [0, 10, 20, 30];
+        const minutes = minutesOptions[Math.floor(Math.random() * minutesOptions.length)];
+        
+    // Display the time
+        const timeBox = document.getElementById("time-box");
+        const formattedHours = hours === 0 ? 12 : hours;
+        timeBox.value = `${formattedHours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+
+    // Calculate the angles and update global variables
+        minuteAngle = (minutes / 60) * 360 - 90;
+        hourAngle = (hours % 12) * 30 + (minutes / 60) * 30 - 90;
+
+    // Rotate the clock hands
+        const hourHand = document.querySelector(".hour-hand");
+        const minuteHand = document.querySelector(".minute-hand");
+        hourHand.style.transform = `rotate(${hourAngle}deg)`;
+        minuteHand.style.transform = `rotate(${minuteAngle}deg)`;
+
+    // Calculate the absolute angle difference between the hands
+        let angleBetween1 = Math.abs(hourAngle - minuteAngle);
+        if (angleBetween1 > 360) angleBetween1 %= 360;
+        const angleBetween2 = 360 - angleBetween1;
+
+        selectedAngle = Math.min(angleBetween1, angleBetween2);
+        const isAngleBetween1 = angleBetween1 === selectedAngle;
+
+        const rotationStartAngle = isAngleBetween1 ? Math.min(hourAngle, minuteAngle) : Math.max(hourAngle, minuteAngle);
+
+        const radius = 110;
+        const centerX = 110;
+        const centerY = 110;
+
+        const endAngle = rotationStartAngle + selectedAngle;
+        const startX = centerX + radius * Math.cos(rotationStartAngle * (Math.PI / 180));
+        const startY = centerY + radius * Math.sin(rotationStartAngle * (Math.PI / 180));
+        const endX = centerX + radius * Math.cos(endAngle * (Math.PI / 180));
+        const endY = centerY + radius * Math.sin(endAngle * (Math.PI / 180));
+
+        const largeArcFlag = selectedAngle > 180 ? 1 : 0;
+
+        const pathData = `
+          M ${centerX} ${centerY} 
+          L ${startX} ${startY} 
+          A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY} 
+          Z
+        `;
+        sectorPath.setAttribute("d", pathData);
+
+        sectorPath.style.opacity = "1";
+      }, 500);
+    }
+
+    document.getElementById("set-time").addEventListener("click", setTime);
+
+    function toggleShowAngle() {
+      const sectorPath = document.querySelector(".sector-path");
+      const showAngleButton = document.getElementById("show-angle");
+
+      if (isAngleDisplayed) {
+        angleBox.value = "";
+        showAngleButton.textContent = "Show Angle";
+        isAngleDisplayed = false;
+      } else {
+        if (!sectorPath.getAttribute("d")) {
+          angleBox.value = "No angle set";
+          return;
+        }
+
+        angleBox.value = `${Math.round(selectedAngle)}°`;
+        showAngleButton.textContent = "Hide Angle";
+        isAngleDisplayed = true;
+      }
+    }
+
+    document.getElementById("show-angle").addEventListener("click", toggleShowAngle);
+    
+    
+// Functionality for the "How to Calculate" button
+document.getElementById("how-to-calculate").addEventListener("click", function () {
+  const overlay = document.getElementById("calculation-overlay");
+  overlay.style.display = "flex"; // Show the overlay
+});
+
+// Functionality for the "Close" button
+document.getElementById("close-overlay-btn").addEventListener("click", function () {
+  const overlay = document.getElementById("calculation-overlay");
+  overlay.style.display = "none"; // Hide the overlay
+});
+
+// Functionality for the "Why does this work?" button
+document.getElementById("toggle-why-btn").addEventListener("click", function () {
+  const toggleButton = document.getElementById("toggle-why-btn");
+  const overlayText = document.getElementById("overlay-text");
+
+  if (toggleButton.textContent === "Why does this work?") {
+    // Explanation content
+    overlayText.innerHTML = `
+      <p>The clock has 12 numbers on it: 1-12. The whole circle makes 360°, so each number makes
+        <sup>360</sup>&frasl;<sub>12</sub> = 30°. 
+        The Minute Hand moves one number for every 5 minutes!
+        That's 30° every 5 minutes. That's <sup>30</sup>&frasl;<sub>5</sub> = 6° for every minute. 
+        The Hour Hand moves one number for every hour, or 30° for every hour past 12. 
+        Every hour has 60 minutes, so the Hour Hand moves 
+        <sup>30</sup>&frasl;<sub>60</sub> = 0.5° for every minute!<br/><span class="steps">Phew!</span></p>
+    `;
+    toggleButton.textContent = "Back to steps";
+  } else {
+    // Steps content
+    overlayText.innerHTML = `
+      <p><span class="steps">Step 1</span> - Look at the time.<br/><span class="steps">Step 2</span> - For every hour, the hour hand would make 30°.<br/><span class="steps">Step 3</span> - For every minute, the Minute Hand would make 6°.<br/>
+        - Remember, the Hour Hand should also move 
+        <sup>1</sup>&frasl;<sub>2</sub>° for every minute! Or, you can think of it as 
+        <sup>1</sup>&frasl;<sub>2</sub>° for every 2 minutes. Add this to the angle for the Hour Hand.<br/>
+        <span class="steps">Step 4</span> - You have an angle now for the Minute Hand and for the Hour Hand. Simply subtract the smaller
+        angle from the larger angle, and you have the angle in between!<br/><span class="steps">That's it!</span></p>
+    `;
+    toggleButton.textContent = "Why does this work?";
+  }
+});
+    
+    
+    
+    
+// Track rotation and snapping state
+let isDragging = false;
+let rotationAngle = 0;
+
+// Protractor and handle references
+const protractorContainer = document.getElementById("protractor-container");
+const clockContainer = document.getElementById("clock");
+const protractorImage = document.getElementById("protractor-image");
+const rotationHandle = document.getElementById("rotation-handle");
+const howToMeasureBtn = document.getElementById("how-to-measure-btn");
+const showProtractorBtn = document.getElementById("show-protractor");
+
+// Functionality for "Show/Hide Protractor" button
+showProtractorBtn.addEventListener("click", function () {
+  if (protractorContainer.style.display === "block") {
+    // Hide the protractor
+    protractorContainer.style.display = "none";
+    howToMeasureBtn.style.display = "none";
+    showProtractorBtn.textContent = "Show Protractor"; // Update button text
+  } else {
+    // Show the protractor
+    protractorContainer.style.display = "block";
+    howToMeasureBtn.style.display = "inline-block";
+    showProtractorBtn.textContent = "Hide Protractor"; // Update button text
+  }
+});
+
+// Add drag functionality to the rotation handle
+rotationHandle.addEventListener("mousedown", function (e) {
+  e.preventDefault(); // Prevent default browser behavior
+  isDragging = true;
+});
+
+// Add mouseup event to stop dragging
+document.addEventListener("mouseup", function () {
+  isDragging = false;
+});
+
+// Add mousemove event to handle rotation
+document.addEventListener("mousemove", function (e) {
+  if (!isDragging) return; // Only rotate when dragging
+
+  // Calculate the center of the protractor container
+  const rect = protractorContainer.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2; // Center X coordinate
+  const centerY = rect.top + rect.height / 2; // Center Y coordinate
+
+  // Calculate the angle based on the mouse position
+  const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI);
+
+  // Normalize the angle to 0–360 degrees
+  const normalizedAngle = (angle + 360) % 360 + 90;
+
+const snappingThreshold = 10;
+
+  let snappedAngle = normalizedAngle;
+  if (Math.abs(normalizedAngle - hourAngle) <= snappingThreshold) {
+    snappedAngle = hourAngle; // Snap to hour hand
+  } else if (Math.abs(normalizedAngle - minuteAngle) <= snappingThreshold) {
+    snappedAngle = minuteAngle; // Snap to minute hand
+  } else if (Math.abs(normalizedAngle - hourAngle - 180) <= snappingThreshold) {
+    snappedAngle = hourAngle - 180; // Snap to hour hand
+  } else if (Math.abs(normalizedAngle - minuteAngle - 180) <= snappingThreshold) {
+    snappedAngle = minuteAngle - 180; // Snap to minute hand
+  }
+
+
+  // Apply the rotation to the container
+  protractorContainer.style.transform = `rotate(${snappedAngle}deg)`;
+  rotationAngle = snappedAngle;
+
+  // Debug: Log the rotation angle for troubleshooting
+  console.log("Rotation Angle:", normalizedAngle);
+});
+    
+    
+    // Get references to elements
+const measureOverlay = document.getElementById("measure-overlay");
+const closeMeasureOverlayBtn = document.getElementById("close-measure-overlay-btn");
+
+
+// Show the overlay when "How to Measure" is clicked
+howToMeasureBtn.addEventListener("click", function () {
+  measureOverlay.style.display = "flex";
+});
+
+// Close the overlay when "Close" is clicked
+closeMeasureOverlayBtn.addEventListener("click", function () {
+  measureOverlay.style.display = "none";
+});
+    
+    
+  </script>
+</body>
+</html>
