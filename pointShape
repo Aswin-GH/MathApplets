@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Area with Unit Squares</title>
+
+    <style>
+
+        body {
+
+            font-family: Arial, sans-serif;
+
+            text-align: center;
+
+            margin: 20px;
+
+        }
+
+        #working-area {
+
+            position: relative;
+
+            width: 600px;
+
+            height: 600px;
+
+            margin: 20px auto;
+
+            border: 1px solid Tomato;
+
+            background-color: Snow;
+
+            display: grid;
+
+            grid-template-columns: repeat(15, 1fr);
+
+            grid-template-rows: repeat(15, 1fr);
+            
+            border-radius: 2%;
+
+        }
+        
+
+
+        .grid-cell {
+
+            border: 0.5px solid #ddd;
+
+        }
+
+        #status {
+
+            margin: 10px;
+
+            color: SteelBlue;
+
+            font-weight: bold;
+
+        }
+
+        .point {
+
+    position: absolute;
+
+    width: 25px;
+
+    height: 25px;
+
+    background-color: SteelBlue;
+
+    border-radius: 50%;
+
+    transform: translate(-50%, -50%);
+    
+    opacity: 50%;
+
+}
+
+.line-segment {
+
+    position: absolute;
+
+    background-color: blue;
+
+    height: 5px;
+
+    transform-origin: 0 0;
+
+}
+
+.grid-highlight {
+
+    background-color: rgba(0, 255, 0, 0.3); /* Translucent green for enclosed cells */
+
+}
+
+button {
+    background-color: SteelBlue; /* Button color */
+    color: white; /* Text color */
+    border: none; /* Remove default border */
+    padding: 10px 20px; /* Padding for a comfortable click area */
+    font-size: 18px; /* Readable font size */
+    cursor: pointer; /* Change cursor to pointer on hover */
+    border-radius: 5px; /* Rounded corners */
+    transition: background-color 0.3s, transform 0.2s; /* Smooth transition effects */
+}
+
+button:hover {
+    background-color: DodgerBlue; /* Slightly brighter blue on hover */
+}
+
+button:active {
+    background-color: MediumBlue; /* Darker blue when clicked */
+    transform: scale(0.95); /* Slightly shrink on click */
+}
+
+button:disabled {
+    background-color: LightSteelBlue; /* Gray out when disabled */
+    cursor: not-allowed;
+}
+
+
+input[type="number"] {
+    width: 120px; /* Set width */
+    padding: 8px 12px; /* Padding for better readability */
+    font-size: 16px; /* Adjust font size */
+    border: 2px solid SteelBlue; /* Border color */
+    border-radius: 5px; /* Rounded corners */
+    outline: none; /* Remove default focus outline */
+    transition: border-color 0.3s, box-shadow 0.3s; /* Smooth transitions */
+}
+
+input[type="number"]:focus {
+    border-color: DodgerBlue; /* Change border color when focused */
+    box-shadow: 0 0 5px rgba(30, 144, 255, 0.5); /* Add glow effect */
+}
+
+input[type="number"]::placeholder {
+    color: LightSteelBlue; /* Placeholder text color */
+    font-style: italic;
+}
+
+    </style>
+
+</head>
+
+<body>
+
+    <h1>Area with Unit Squares</h1>
+
+    <div>
+
+
+        <input type="number" id="ticker" min="3" placeholder="Enter # points">
+
+        <button id="make-points">Make Points</button>
+
+    </div>
+
+    <div id="status" hidden></div>
+
+    <div id="working-area"></div>
+
+<button id="find-enclosed" style="margin: 20px;">Find Enclosed</button>
+
+<button id="reset-button" style="margin: 20px;">Reset</button>
+
+<div id="output-message" hidden></div>
+
+
+    <script>
+
+        // Grid setup
+
+        const workingArea = document.getElementById('working-area');
+
+
+        // Create grid cells
+
+        for (let i = 0; i < 15 * 15; i++) {
+
+            const cell = document.createElement('div');
+
+            cell.classList.add('grid-cell');
+
+            workingArea.appendChild(cell);
+
+        }
+
+
+        console.log("Basic grid setup complete.");
+
+        
+        
+        
+
+        // Variables for points and lines
+
+const gridSize = 40; // Size of each grid cell
+
+const points = [];
+
+const lines = [];
+
+const makePointsButton = document.getElementById('make-points');
+
+const tickerInput = document.getElementById('ticker');
+
+const statusBox = document.getElementById('status');
+
+
+// Event listener for "Make Points" button
+
+makePointsButton.addEventListener('click', () => {
+
+    // Clear previous highlights and output message
+
+clearHighlights();
+
+outputMessage.hidden = true;
+
+outputMessage.textContent = '';
+
+
+const n = parseInt(tickerInput.value);
+
+
+    // Validate input
+
+    if (isNaN(n) || n < 1) {
+
+        alert("Please enter a valid number of points (minimum 1).");
+
+        return;
+
+    }
+
+
+    reset(); // Clear existing points and lines
+
+
+    // Generate points
+
+    for (let i = 0; i < n; i++) {
+
+        const x = Math.floor(Math.random() * 15) * gridSize; // Random x-coordinate
+
+        const y = Math.floor(Math.random() * 15) * gridSize; // Random y-coordinate
+
+
+// Create the point
+
+const point = document.createElement('div');
+
+point.className = 'point';
+
+point.style.left = `${x}px`;
+
+point.style.top = `${y}px`;
+
+
+// Add dragging functionality
+
+point.addEventListener('mousedown', (e) => onPointDragStart(e, i));
+
+
+// Add the point to the working area
+
+workingArea.appendChild(point);
+
+points.push(point);
+
+
+        // Create a line segment to the previous point
+
+        if (i > 0) {
+
+            const line = createLine(points[i - 1], points[i]);
+
+            workingArea.appendChild(line);
+
+            lines.push(line);
+
+        }
+
+    }
+
+
+// Update the status message
+
+    if (n === 1) {
+
+        statusBox.innerHTML = `1 point created. Add more points to form a shape.`; statusBox.style.color = 'SteelBlue';
+
+    } else if (n === 2) {
+
+        statusBox.innerHTML = `2 points, 1 line segment.<br>Add more points to form a closed shape.<br>Move the points around to see how the segment changes too!`; statusBox.style.color = 'SteelBlue';
+
+    } else if (n === 3) {
+
+        statusBox.innerHTML = `3 points, 2 line segments.<br>Add more points and merge them to form a closed shape.<br>Move the points around to see how the segments change too!`; statusBox.style.color = 'SteelBlue';
+
+    } else {
+
+        statusBox.innerHTML = `${n} points, ${n - 1} line segments.<br>Move the points, and try joining the open ends!`; statusBox.style.color = 'SteelBlue';
+
+    }
+
+    statusBox.hidden = false;
+
+
+    console.log("Points and lines created:", points, lines);
+
+});
+
+
+
+// Function to create a line between two points
+
+function createLine(point1, point2) {
+
+    const line = document.createElement('div');
+
+    line.className = 'line-segment';
+
+    updateLine(line, point1, point2);
+
+    return line;
+
+}
+
+
+// Function to update a line's position and angle
+
+function updateLine(line, point1, point2) {
+
+    const x1 = parseInt(point1.style.left);
+
+    const y1 = parseInt(point1.style.top);
+
+    const x2 = parseInt(point2.style.left);
+
+    const y2 = parseInt(point2.style.top);
+
+
+    const length = Math.hypot(x2 - x1, y2 - y1); // Line length
+
+    const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI); // Line angle in degrees
+
+
+    line.style.position = 'absolute';
+
+    line.style.width = `${length}px`;
+
+    line.style.height = '5px';
+
+    line.style.backgroundColor = 'SteelBlue';
+
+    line.style.transformOrigin = '0 0';
+
+    line.style.transform = `rotate(${angle}deg)`;
+
+    line.style.left = `${x1}px`;
+
+    line.style.top = `${y1}px`;
+
+}
+
+
+// Function to reset the grid
+
+function reset() {
+
+    // Remove all points and lines
+
+    points.forEach(point => point.remove());
+
+    lines.forEach(line => line.remove());
+
+    points.length = 0;
+
+    lines.length = 0;
+     // Clear the ticker input field
+
+    tickerInput.value = ''; // Make the ticker blank
+
+    // Reset the status box
+
+    statusBox.hidden = true;
+
+    statusBox.textContent = '';
+
+
+    console.log("Grid reset complete.");
+
+}
+
+        
+
+        
+
+        function onPointDragStart(event, index) {
+        
+                    event.preventDefault();
+
+    const point = points[index];
+
+
+    function onDrag(e) {
+
+        const rect = workingArea.getBoundingClientRect();
+
+        let x = Math.round((e.clientX - rect.left) / gridSize) * gridSize;
+
+        let y = Math.round((e.clientY - rect.top) / gridSize) * gridSize;
+
+
+        // Clamp the position to the grid
+
+        x = Math.min(Math.max(0, x), (15 - 1) * gridSize);
+
+        y = Math.min(Math.max(0, y), (15 - 1) * gridSize);
+
+
+        // Update point position
+
+        point.style.left = `${x}px`;
+
+        point.style.top = `${y}px`;
+
+
+        // Update all connected line segments
+
+        updateAllSegments();
+
+    }
+
+    
+
+function checkClosure() {
+
+    const first = points[0];
+
+    const last = points[points.length - 1];
+
+
+    const firstX = parseInt(first.style.left);
+
+    const firstY = parseInt(first.style.top);
+
+    const lastX = parseInt(last.style.left);
+
+    const lastY = parseInt(last.style.top);
+
+	const st = points.length;
+
+
+    if (firstX === lastX && firstY === lastY) {
+
+        console.log("Closure detected!");
+
+
+        // Update points and lines to red
+
+        points.forEach(point => {
+
+            point.style.backgroundColor = 'Coral';
+
+        });
+
+        lines.forEach(line => {
+
+            line.style.backgroundColor = 'Coral';
+
+        });
+
+
+        // Update status
+
+        if (st === 1) {
+
+        	statusBox.innerHTML = `1 single point, add more points and join the ends<br>to form a closed shape.`; statusBox.style.color = 'SteelBlue';
+
+        } else if (st === 2) {
+        	statusBox.innerHTML = `1 single point, Add more points and join the ends<br>to form a closed shape.`; statusBox.style.color = 'SteelBlue';
+        } else if (st === 3) {
+        	statusBox.innerHTML = `2 points and a line segment. Add more points<br>and join the ends to form a closed shape.`; statusBox.style.color = 'SteelBlue';
+        }else { statusBox.innerHTML = `${points.length - 1} points, ${lines.length} line segments.<br>This is a closed figure - a polygon.<br>Click 'Find Enclosed' button below.`;
+
+        statusBox.style.color = 'Coral';
+
+        }
+
+    } else {
+
+        console.log("Figure is open.");
+
+
+        // Reset points and lines to blue
+
+        points.forEach(point => {
+
+            point.style.backgroundColor = 'SteelBlue';
+
+        });
+
+        lines.forEach(line => {
+
+            line.style.backgroundColor = 'SteelBlue';
+
+        });
+
+
+        // Update status
+
+        
+
+    if (st <= 1) {
+
+        statusBox.innerHTML = `Add more points to form a shape.`; statusBox.style.color = 'SteelBlue';
+
+    } else if (st === 2) {
+
+        statusBox.innerHTML = `2 points, 1 line segment.<br>Add more points to form a closed shape.<br>Move the points around to see how the segment changes too!`; statusBox.style.color = 'SteelBlue';
+
+    } else if (st === 3) {
+
+        statusBox.innerHTML = `3 points, 2 line segments.<br>Add more points and merge them to form a closed shape.<br>Move the points around to see how the segments change too!`; statusBox.style.color = 'SteelBlue';
+
+    } else {
+
+        statusBox.innerHTML = `${st} points, ${st - 1} line segments.<br>Move the points, and try joining the open ends!`; statusBox.style.color = 'SteelBlue';
+
+    }
+
+
+        // Clear output message if figure becomes open
+
+        outputMessage.hidden = true;
+
+    }
+
+}
+
+
+
+
+    function onDragEnd() {
+
+        document.removeEventListener('mousemove', onDrag);
+
+        document.removeEventListener('mouseup', onDragEnd);
+
+        document.removeEventListener('touchmove', onDrag);
+
+        document.removeEventListener('touchend', onDragEnd);
+
+        // Check if the figure is now closed
+
+        checkClosure();
+
+    }
+
+
+    document.addEventListener('mousemove', onDrag);
+
+    document.addEventListener('mouseup', onDragEnd);
+
+    document.addEventListener('touchmove', onDrag);
+
+    document.addEventListener('touchend', onDragEnd);
+}
+
+
+function updateAllSegments() {
+
+    for (let i = 0; i < points.length - 1; i++) {
+
+        updateLine(lines[i], points[i], points[i + 1]);
+
+    }
+
+}
+
+
+function clearHighlights() {
+
+    // Remove grid highlights
+
+    const highlightedCells = document.querySelectorAll('.grid-highlight');
+
+    highlightedCells.forEach(cell => cell.classList.remove('grid-highlight'));
+
+
+    // Remove polygon fill
+
+    const polygonFill = document.getElementById('polygon-fill');
+
+    if (polygonFill) {
+
+        polygonFill.remove();
+
+    }
+
+}
+
+
+function drawPolygonFill() {
+
+    // Create an SVG element for the polygon
+
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+
+    svg.setAttribute("id", "polygon-fill");
+
+    svg.setAttribute("style", "position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;");
+
+
+    const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+
+    polygon.setAttribute("fill", "rgba(255, 0, 0, 0.3)"); // Translucent red fill
+
+    polygon.setAttribute("stroke", "none");
+
+
+    // Create points string for the polygon
+
+    const pointsString = points.map(point => {
+
+        const x = parseInt(point.style.left); // Exact grid-aligned x-coordinate
+
+        const y = parseInt(point.style.top); // Exact grid-aligned y-coordinate
+
+        return `${x},${y}`;
+
+    }).join(" ");
+
+
+    polygon.setAttribute("points", pointsString);
+
+    svg.appendChild(polygon);
+
+    workingArea.appendChild(svg);
+
+}
+
+
+
+
+const findEnclosedButton = document.getElementById('find-enclosed');
+
+const outputMessage = document.getElementById('output-message');
+
+
+findEnclosedButton.addEventListener('click', () => {
+
+    // Validate if the figure is closed
+
+    if (!isFigureClosed()) {
+
+        outputMessage.textContent = "You need to close the figure to find enclosed points!";
+
+        outputMessage.hidden = false;
+
+        console.log("Figure is not closed.");
+
+        return;
+
+    }
+
+
+    // Clear any previous highlights
+
+    clearHighlights();
+
+
+    // Add translucent red fill for the polygon
+
+    drawPolygonFill();
+
+
+    // Highlight enclosed grid cells
+
+    const enclosedCells = findEnclosedCells();
+
+
+    // Compute the area of the polygon
+
+    const totalArea = calculatePolygonArea();
+
+
+    // Update the output message
+
+    outputMessage.innerHTML = `The highlighted region contains all points that make the shape up.<br>They occupy ${enclosedCells.length} full squares and then parts of other squares.<br>The total area is ${totalArea.toFixed(2)} square units.`;
+
+    outputMessage.hidden = false;
+
+
+    console.log(`Enclosed region highlighted. Total area: ${totalArea.toFixed(2)} square units.`);
+
+});
+
+
+const resetButton = document.getElementById('reset-button');
+
+
+resetButton.addEventListener('click', () => {
+
+    reset(); // Call the reset function
+
+    outputMessage.hidden = true; // Hide the output message
+
+    outputMessage.textContent = ''; // Clear any remaining output text
+
+    statusBox.textContent = ''; // Clear the status text
+
+    clearHighlights(); // Clear highlights, if applicable
+
+     // Clear the ticker input field
+
+    tickerInput.value = ''; // Make the ticker blank
+
+    console.log("Reset button clicked: Points, lines, and highlights cleared.");
+
+});
+
+
+
+// Function to check if the figure is closed
+
+function isFigureClosed() {
+
+    const first = points[0];
+
+    const last = points[points.length - 1];
+
+
+    const firstX = parseInt(first.style.left);
+
+    const firstY = parseInt(first.style.top);
+
+    const lastX = parseInt(last.style.left);
+
+    const lastY = parseInt(last.style.top);
+
+
+    return firstX === lastX && firstY === lastY;
+
+}
+
+
+// Function to highlight the enclosed region
+
+function findEnclosedCells() {
+
+    const enclosedCells = [];
+
+    const cells = document.querySelectorAll('.grid-cell');
+
+
+    // Create the scaled polygon PX
+
+    const scaledPolygon = createScaledPolygon();
+
+
+    cells.forEach(cell => {
+
+        const cellRect = cell.getBoundingClientRect();
+
+        const gridRect = workingArea.getBoundingClientRect();
+
+
+        // Adjust cell coordinates relative to the grid's origin
+
+        const topLeftX = cellRect.left - gridRect.left;
+
+        const topLeftY = cellRect.top - gridRect.top;
+
+        const topRightX = topLeftX + gridSize;
+
+        const topRightY = topLeftY;
+
+        const bottomLeftX = topLeftX;
+
+        const bottomLeftY = topLeftY + gridSize;
+
+        const bottomRightX = topRightX;
+
+        const bottomRightY = bottomLeftY;
+
+
+        // Check if all four corners are inside the scaled polygon PX
+
+        if (
+
+            isPointInsidePolygon(topLeftX, topLeftY, scaledPolygon) &&
+
+            isPointInsidePolygon(topRightX, topRightY, scaledPolygon) &&
+
+            isPointInsidePolygon(bottomLeftX, bottomLeftY, scaledPolygon) &&
+
+            isPointInsidePolygon(bottomRightX, bottomRightY, scaledPolygon)
+
+        ) {
+
+            cell.classList.add('grid-highlight'); // Highlight in green
+
+            enclosedCells.push(cell);
+
+        }
+
+    });
+
+
+    return enclosedCells;
+
+}
+
+
+
+
+
+// Function to calculate the polygon's area using the Shoelace formula
+
+function calculatePolygonArea() {
+
+    let area = 0;
+
+    const n = points.length;
+
+
+    for (let i = 0; i < n; i++) {
+
+        const x1 = parseInt(points[i].style.left) / gridSize;
+
+        const y1 = parseInt(points[i].style.top) / gridSize;
+
+        const x2 = parseInt(points[(i + 1) % n].style.left) / gridSize;
+
+        const y2 = parseInt(points[(i + 1) % n].style.top) / gridSize;
+
+
+        area += x1 * y2 - y1 * x2;
+
+    }
+
+
+    return Math.abs(area) / 2; // Area in grid square units
+
+}
+
+
+// Function to check if a point is inside the polygon
+
+function isPointInsidePolygon(x, y, polygon = points) {
+
+    let inside = false;
+
+    const n = polygon.length;
+
+
+    for (let i = 0, j = n - 1; i < n; j = i++) {
+
+        const xi = polygon[i].x || parseInt(polygon[i].style.left);
+
+        const yi = polygon[i].y || parseInt(polygon[i].style.top);
+
+        const xj = polygon[j].x || parseInt(polygon[j].style.left);
+
+        const yj = polygon[j].y || parseInt(polygon[j].style.top);
+
+
+        const intersect = (yi > y) !== (yj > y) &&
+
+                          x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+
+        if (intersect) inside = !inside;
+
+    }
+
+
+    return inside;
+
+}
+
+        
+
+function calculateCentroid() {
+
+    let sumX = 0;
+
+    let sumY = 0;
+
+    const n = points.length;
+
+
+    points.forEach(point => {
+
+        const x = parseInt(point.style.left);
+
+        const y = parseInt(point.style.top);
+
+        sumX += x;
+
+        sumY += y;
+
+    });
+
+
+    return { x: sumX / n, y: sumY / n }; // Centroid (center of polygon P)
+
+}
+
+
+
+function createScaledPolygon(scaleFactor = 1.025) {
+
+    const centroid = calculateCentroid();
+
+    const scaledVertices = [];
+
+
+    points.forEach(point => {
+
+        const x = parseInt(point.style.left);
+
+        const y = parseInt(point.style.top);
+
+
+        // Calculate the relative position from the centroid
+
+        const deltaX = x - centroid.x;
+
+        const deltaY = y - centroid.y;
+
+
+        // Scale the relative position
+
+        const scaledX = centroid.x + deltaX * scaleFactor;
+
+        const scaledY = centroid.y + deltaY * scaleFactor;
+
+
+        scaledVertices.push({ x: scaledX, y: scaledY });
+
+    });
+
+
+    return scaledVertices; // Vertices of PX
+
+}
+
+    </script>
+
+</body>
+
+</html>
