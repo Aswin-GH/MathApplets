@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Area of a Parallelogram</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #f0f0f0;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .coordinate-plane {
+            position: relative;
+            width: 90%;
+            max-width: 800px; /* Set max width for larger screens */
+            aspect-ratio: 4 / 3; /* Maintain 4:3 aspect ratio */
+            background-color: white;
+            border: 2px dashed Coral;
+            margin-bottom: 20px;
+        }
+
+        .controls-section{
+            width: 90%;
+            max-width: 800px;
+            background-color: Snow;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 2%;
+        }
+        
+        .move-section {
+            border-radius: 25px;
+            width: 90%;
+            max-width: 800px;
+            background-color: GhostWhite;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 5px;
+        }
+
+        .control input[type="number"] {
+            width: 60px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        .control label {
+            font-size: 18px;
+            padding: 15px;
+        }
+        
+        .split-section {
+            border-radius: 10 px;
+            width: 90%;
+            max-width: 800px;
+            background-color: GhostWhite;
+            display: flex;
+            justify-content: center; /* Center-align the button */
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .split-section button {
+            background-color: LightCoral;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 15px;
+   		}
+
+        .controls-section button {
+            background-color: SteelBlue;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 15px;
+        }
+
+        .split-section button:hover {
+        background-color: Tomato;
+    	}
+        
+   		.controls-section button:hover {
+            background-color: DodgerBlue;
+        }
+
+        .move-section label {
+            font-size: 18px;
+            margin-right: 10px;
+            padding: 15px;
+        }
+
+        .move-section input[type="range"] {
+            width: 100%;
+            max-width: 400px;
+            padding: 15px;
+        }
+
+        .rectangle {
+            position: absolute;
+            border: 7px solid Blue;
+            background-color: transparent;
+            display: none; /* Initially hidden */
+            border-radius: 2%;
+        }
+
+        .label {
+            position: absolute;
+            font-size: 16px;
+            background-color: Snow;
+            padding: 2px 5px;
+            border-radius: 3px;
+            display: none; /* Initially hidden */
+            z-index: 5;
+            padding: 10 px;
+        }
+        
+        
+    </style>
+</head>
+<body>
+    <div class="title" id="titleText">Area of a Parallelogram</div>
+    <div class="coordinate-plane" id="plane"></div>
+
+    <div class="controls-section">
+        <div class="control">
+            <label for="heightInput">Height:</label>
+            <input type="number" id="heightInput" value="4" min="1" />
+        </div>
+        <div class="control">
+            <label for="baseInput">Base:</label>
+            <input type="number" id="baseInput" value="7" min="1" />
+        </div>
+        <div class="control">
+            <label for="slantInput">Slant:</label>
+            <input type="number" id="slantInput" value="3" min="0" />
+        </div>
+        <div class="control">
+            <button id="drawButton">Draw Parallelogram</button>
+        </div>
+    </div>
+
+    <div class="split-section">
+        <button id="splitButton">Split Shape</button>
+    </div>
+
+    <div class="move-section" id="moveSection" style="display: none;">
+        <label for="triangleSlider">Move the Triangle:</label>
+        <input type="range" id="triangleSlider" min="0" step="1" value="0" />
+    </div>
+
+    <script>
+        const plane = document.getElementById('plane');
+        const titleText = document.getElementById('titleText');
+        const moveSection = document.getElementById('moveSection');
+        const triangleSlider = document.getElementById('triangleSlider');
+        let triangle, rectangle, baseLabel, heightLabel, currentBase, currentHeight, currentSlant;
+
+        function drawParallelogram() {
+            const planeWidth = plane.offsetWidth;
+            const planeHeight = plane.offsetHeight;
+            const maxBaseUnits = 12; // Maximum base units to fit within the plane
+            const scale = planeWidth / maxBaseUnits; // Scale dynamically to fit the base
+
+            plane.innerHTML = '';
+            moveSection.style.display = 'none'; // Hide the move section on redraw
+            titleText.textContent = 'Area of a Parallelogram'; // Reset title text
+
+            currentBase = parseFloat(document.getElementById('baseInput').value);
+            currentHeight = parseFloat(document.getElementById('heightInput').value);
+            currentSlant = parseFloat(document.getElementById('slantInput').value);
+
+            const parallelogramPoints = [
+                [0, 0], // Bottom-left
+                [currentBase, 0], // Bottom-right
+                [currentBase + currentSlant, currentHeight], // Top-right
+                [currentSlant, currentHeight], // Top-left
+            ];
+
+            const parallelogram = document.createElement('div');
+            parallelogram.style.clipPath = `polygon(${parallelogramPoints.map(
+                ([x, y]) => `${x * scale}px ${planeHeight - y * scale}px`
+            ).join(', ')})`;
+            parallelogram.style.width = `${planeWidth}px`;
+            parallelogram.style.height = `${planeHeight}px`;
+            parallelogram.style.backgroundColor = 'LightCoral';
+            parallelogram.style.border = '2px solid green';
+            parallelogram.style.position = 'absolute';
+            plane.appendChild(parallelogram);
+
+            // Create a hidden rectangle for later highlighting
+            rectangle = document.createElement('div');
+            rectangle.className = 'rectangle';
+            rectangle.style.width = `${currentBase * scale-10}px`;
+            rectangle.style.height = `${currentHeight * scale-10}px`;
+            rectangle.style.left = `${currentSlant * scale}px`; // Attach to the right edge of the parallelogram
+            rectangle.style.bottom = `${-5}px`; // Align with the base
+            plane.appendChild(rectangle);
+
+            // Create labels for base and height
+            baseLabel = document.createElement('div');
+            baseLabel.className = 'label';
+            baseLabel.textContent = 'base';
+            baseLabel.style.left = `${(currentSlant + currentBase / 2) * scale}px`;
+            baseLabel.style.bottom = `${-5}px`; // Position slightly above the rectangle
+            plane.appendChild(baseLabel);
+
+            heightLabel = document.createElement('div');
+            heightLabel.className = 'label';
+            heightLabel.textContent = 'height';
+            heightLabel.style.left = `${currentSlant * scale-25}px`;
+            heightLabel.style.bottom = `${currentHeight * scale / 2}px`;
+            plane.appendChild(heightLabel);
+        }
+
+        function splitShape() {
+            moveSection.style.display = 'flex';
+
+            const planeWidth = plane.offsetWidth;
+            const planeHeight = plane.offsetHeight;
+            const maxBaseUnits = 12;
+            const scale = planeWidth / maxBaseUnits;
+
+            const trianglePoints = [
+                [currentSlant, currentHeight], // Top-left
+                [0, 0], // Bottom-left
+                [currentSlant, 0], // Bottom-right (perpendicular to base)
+            ];
+
+            triangle = document.createElement('div');
+            triangle.style.clipPath = `polygon(${trianglePoints.map(
+                ([x, y]) => `${x * scale}px ${planeHeight - y * scale}px`
+            ).join(', ')})`;
+            triangle.style.width = `${planeWidth}px`;
+            triangle.style.height = `${planeHeight}px`;
+            triangle.style.backgroundColor = 'rgba(70, 130, 180, 0.7)';
+            triangle.style.position = 'absolute';
+            plane.appendChild(triangle);
+            
+            
+            retriangle = document.createElement('div');
+            retriangle.style.clipPath = `polygon(${trianglePoints.map(
+                ([x, y]) => `${x * scale}px ${planeHeight - y * scale}px`
+            ).join(', ')})`;
+            retriangle.style.width = `${planeWidth}px`;
+            retriangle.style.height = `${planeHeight}px`;
+            retriangle.style.backgroundColor = 'rgba(255, 218, 185, 0.7)';
+            retriangle.style.position = 'absolute';
+            plane.appendChild(retriangle);
+            
+            
+            
+            
+            
+            
+
+            // Update the slider dynamically
+            triangleSlider.max = currentBase.toFixed(2);
+            triangleSlider.step = getSliderStep(currentBase);
+            triangleSlider.value = 0;
+            triangleSlider.addEventListener('input', (e) => {
+                moveTriangle(parseFloat(e.target.value), scale);
+            });
+        }
+
+        function moveTriangle(offset, scale) {
+            const planeHeight = plane.offsetHeight;
+
+            const trianglePoints = [
+                [currentSlant + offset, currentHeight], // Move top-left point
+                [offset, 0], // Move bottom-left point
+                [currentSlant + offset, 0], // Move perpendicular point
+            ];
+
+            triangle.style.clipPath = `polygon(${trianglePoints.map(
+                ([x, y]) => `${x * scale}px ${planeHeight - y * scale}px`
+            ).join(', ')})`;
+
+            // Highlight rectangle and labels when the slider is at the right-most position
+            if (Math.abs(offset - currentBase) < parseFloat(triangleSlider.step)) {
+                rectangle.style.display = 'block';
+                baseLabel.style.display = 'block';
+                heightLabel.style.display = 'block';
+                titleText.textContent = 'Area of Parallelogram = Area of Rectangle formed = base × height';
+            } else {
+                rectangle.style.display = 'none';
+                baseLabel.style.display = 'none';
+                heightLabel.style.display = 'none';
+                titleText.textContent = 'Area of a Parallelogram';
+            }
+        }
+
+        function getSliderStep(value) {
+            const decimalPlaces = value.toString().split('.')[1]?.length || 0;
+            return Math.pow(10, -decimalPlaces);
+        }
+
+        document.getElementById('drawButton').addEventListener('click', drawParallelogram);
+        document.getElementById('splitButton').addEventListener('click', splitShape);
+
+        // Initial render
+        drawParallelogram();
+    </script>
+</body>
+</html>
