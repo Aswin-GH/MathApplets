@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shape Identification Applet</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #f4f4f4;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      width: 90%;
+      max-width: 900px;
+      background-color: #ffffff;
+      border: 3px dashed SteelBlue;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    @media (min-width: 768px) {
+      .container {
+        flex-direction: row;
+      }
+    }
+
+    .left-panel, .right-panel {
+      padding: 20px;
+    }
+
+    .left-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border-bottom: 3px dashed SteelBlue;
+    }
+
+    @media (min-width: 768px) {
+      .left-panel {
+        border-bottom: none;
+        border-right: 3px dashed SteelBlue;
+        flex: 1;
+      }
+    }
+
+    .shape-area {
+      width: 80%;
+      max-width: 300px;
+      height: auto;
+      aspect-ratio: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .shape {
+      width: 100%;
+      height: 100%;
+    }
+
+    .buttons {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .button {
+      background-color: SteelBlue;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 15px 30px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      touch-action: manipulation;
+    }
+
+    .button:hover {
+      background-color: CornFlowerBlue;
+    }
+
+    .button:disabled {
+      background-color: #b0c4de;
+      cursor: not-allowed;
+    }
+
+    .right-panel {
+      flex: 1;
+      background-color: Gainsboro;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .question {
+      width: 100%;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .question label {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+
+    .options {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .option-button {
+      background-color: #f8f8f8;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+      touch-action: manipulation;
+    }
+
+    .option-button:hover {
+      background-color: CornFlowerBlue;
+      color: white;
+    }
+
+    .option-button.pressed {
+      background-color: SteelBlue;
+      color: #fff;
+      border-color: SteelBlue;
+    }
+
+    .spinner-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .spinner {
+      width: 60px;
+      height: 40px;
+      text-align: center;
+      font-size: 16px;
+    }
+
+    .feedback {
+      font-weight: bold;
+    }
+
+    #checkAnswers {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 18px;
+    }
+
+    @media (max-width: 480px) {
+      .button {
+        font-size: 16px;
+        padding: 12px 24px;
+      }
+
+      .option-button {
+        font-size: 14px;
+        padding: 8px 16px;
+      }
+
+      .spinner {
+        width: 50px;
+        height: 35px;
+        font-size: 14px;
+      }
+
+      .feedback {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Left Panel -->
+    <div class="left-panel">
+      <div class="shape-area">
+        <svg class="shape" viewBox="0 0 300 300"></svg>
+      </div>
+      <div class="buttons">
+        <button class="button" id="generateShape">⟳ Shape</button>
+      </div>
+    </div>
+
+    <!-- Right Panel -->
+    <div class="right-panel">
+      
+      <div class="question">
+        <label>What is the name of the shape? <span class="feedback" id="nameFeedback"></span></label>
+        <div class="options">
+          <button class="option-button" id="option1"></button>
+          <button class="option-button" id="option2"></button>
+          <button class="option-button" id="option3"></button>
+        </div>
+      </div>
+      
+      <div class="question">
+        <label>How many corners? <span class="feedback" id="cornersFeedback"></span></label>
+        <div class="spinner-container">
+          <input class="spinner" type="number" id="corners" min="0" />
+        </div>
+      </div>
+
+
+
+      <div class="question">
+        <label>How many Sides? <span class="feedback" id="sidesFeedback"></span></label>
+        <div class="spinner-container">
+          <input class="spinner" type="number" id="sides" min="0" />
+        </div>
+      </div>
+      <button class="button" id="checkAnswers">Check</button>
+    </div>
+  </div>
+
+<script>
+  const shapesPool = [
+    { name: "Square", corners: 4, sides: 4, angles: 4, points: "50,50 250,50 250,250 50,250" },
+    { name: "Rectangle", corners: 4, sides: 4, angles: 4, points: "50,80 250,80 250,220 50,220" },
+    { name: "Rhombus", corners: 4, sides: 4, angles: 4, points: "150,50 250,150 150,250 50,150" },
+    { name: "Parallelogram", corners: 4, sides: 4, angles: 4, points: "70,80 230,80 200,220 40,220" },
+    { name: "Trapezium", corners: 4, sides: 4, angles: 4, points: "70,80 230,80 250,220 50,220" },
+    { name: "Pentagon", corners: 5, sides: 5, angles: 5, points: "150,50 250,120 200,250 100,250 50,120" },
+    { name: "Hexagon", corners: 6, sides: 6, angles: 6, points: "150,50 230,100 230,200 150,250 70,200 70,100" },
+    { name: "Triangle", corners: 3, sides: 3, angles: 3, points: "150,50 250,250 50,250" },
+  ];
+
+  let shapes = [...shapesPool]; // Copy the original pool
+  let correctShape;
+
+  const shapeElement = document.querySelector(".shape");
+  const cornersInput = document.getElementById("corners");
+  const sidesInput = document.getElementById("sides");
+  const checkButton = document.getElementById("checkAnswers");
+  const optionButtons = [
+    document.getElementById("option1"),
+    document.getElementById("option2"),
+    document.getElementById("option3"),
+  ];
+  const feedbackElements = {
+    name: document.getElementById("nameFeedback"),
+    corners: document.getElementById("cornersFeedback"),
+    sides: document.getElementById("sidesFeedback"),
+  };
+
+  // Function to generate a new shape
+  function generateShape() {
+    if (shapes.length === 0) shapes = [...shapesPool]; // Reset shapes if all have been used
+
+    const randomIndex = Math.floor(Math.random() * shapes.length);
+    correctShape = shapes.splice(randomIndex, 1)[0]; // Remove the shape from the pool
+
+    // Display the shape
+    shapeElement.innerHTML = `<polygon points="${correctShape.points}" stroke="SteelBlue" fill="none" stroke-width="3" />`;
+
+    // Populate name options
+    const otherShapes = shapesPool.filter(shape => shape.name !== correctShape.name);
+    const options = [correctShape, ...otherShapes.sort(() => 0.5 - Math.random()).slice(0, 2)];
+    options.sort(() => 0.5 - Math.random()).forEach((option, index) => {
+      optionButtons[index].innerText = option.name;
+      optionButtons[index].className = "option-button";
+      optionButtons[index].dataset.correct = option.name === correctShape.name;
+    });
+
+    // Clear inputs and feedback
+    cornersInput.value = "";
+    sidesInput.value = "";
+    checkButton.disabled = false;
+    Object.values(feedbackElements).forEach(el => (el.innerText = ""));
+  }
+
+  // Function to handle name option clicks
+  function handleOptionClick(event) {
+    optionButtons.forEach(button => button.classList.remove("pressed"));
+    event.target.classList.add("pressed");
+  }
+
+  // Function to check answers
+  function checkAnswers() {
+    checkButton.disabled = true;
+
+    const selectedName = optionButtons.find(button => button.classList.contains("pressed"));
+    feedbackElements.name.innerText = selectedName?.dataset.correct === "true" ? "✅" : "❌";
+    feedbackElements.corners.innerText = cornersInput.value == correctShape.corners ? "✅" : "❌";
+    feedbackElements.sides.innerText = sidesInput.value == correctShape.sides ? "✅" : "❌";
+  }
+
+  // Attach event listeners
+  document.getElementById("generateShape").addEventListener("click", generateShape);
+  optionButtons.forEach(button => button.addEventListener("click", handleOptionClick));
+  checkButton.addEventListener("click", checkAnswers);
+
+  // Initialize the first shape on load
+  generateShape();
+</script>
+
+
+
+</body>
+</html>
